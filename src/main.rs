@@ -1,3 +1,5 @@
+use std::process::exit;
+
 use freedesktop_entry_parser::{parse_entry, Entry};
 use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow};
@@ -94,12 +96,42 @@ fn build_ui(app: &Application) {
         populate_list_box(&list_box, Some(&text));
     });
 
+    let key_controller = gtk::EventControllerKey::new();
+    key_controller.connect_key_pressed(move |_controller, keyval, _, _| {
+        // println!("Key pressed: {}", keyval);
+
+        let keyname = match keyval.name() {
+            Some(name) => {
+                let name = name.to_string();
+                name
+            }
+            None => return glib::Propagation::Proceed,
+        };
+
+        match keyname.as_str() {
+            "Escape" => {
+                exit(0);
+            }
+            "Up" => {
+                print!("Go up!!")
+            }
+            "Down" => {
+                print!("Go down!!")
+            }
+            _ => {}
+        };
+
+        glib::Propagation::Stop
+    });
+    searchentry.add_controller(key_controller);
+
     vox.append(&searchbar);
     vox.append(&scrolled_window);
 
     let window = window.child(&vox);
 
     let window = window.build();
+
     window.present();
 }
 
