@@ -2,7 +2,15 @@
 
 An app launcher made in Rust using [gtk-rs](https://gtk-rs.org/) bindings.
 
-![Runst running on my hyprland desktop](.github/showcase.png)
+![Ruvoke running on my hyprland desktop](.github/showcase.png)
+
+## Installation
+
+With cargo
+
+```bash
+cargo install ruvoke
+```
 
 ## On Hyprland
 
