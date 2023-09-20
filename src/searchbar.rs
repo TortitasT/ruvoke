@@ -84,6 +84,8 @@ pub fn build_searchbar(list_box: &gtk::ListBox) -> (gtk::SearchBar, gtk::SearchE
                 }
             };
 
+            let command = command.replace("%u", "");
+
             println!("Running {}", command);
             std::process::Command::new(std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()))
                 .arg("-c")
