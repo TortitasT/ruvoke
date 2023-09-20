@@ -4,6 +4,11 @@ use freedesktop_entry_parser::{parse_entry, Entry};
 use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow};
+use key_controller::add_controller;
+use searchbar::build_searchbar;
+
+mod key_controller;
+mod searchbar;
 
 const APP_ID: &str = "eu.tortitas.runst";
 
@@ -17,23 +22,11 @@ fn main() -> glib::ExitCode {
     // Run the application
     app.run()
 }
-fn build_searchbar() -> (gtk::SearchBar, gtk::SearchEntry) {
-    let searchbar = gtk::SearchBar::builder().build();
-    let searchentry = gtk::SearchEntry::builder()
-        .hexpand(true)
-        .placeholder_text("Search")
-        .build();
 
-    searchbar.connect_entry(&searchentry);
-    searchbar.set_search_mode(true);
-    searchbar.set_child(Some(&searchentry));
-
-    (searchbar, searchentry)
-}
-
-fn populate_list_box(list_box: &gtk::ListBox, text: Option<&str>) {
+fn populate_list_box(list_box: &gtk::ListBox, text: Option<&str>) -> usize {
     let entries = get_applications();
 
+    let mut count = 0;
     for entry in entries {
         let description = entry
             .section("Desktop Entry")
@@ -49,26 +42,10 @@ fn populate_list_box(list_box: &gtk::ListBox, text: Option<&str>) {
         let label = gtk::Label::builder().label(description).build();
         list_box.append(&label);
 
-        // let button = gtk::Button::builder().label(description).build();
-        // button.connect_clicked(move |_| {
-        //     let command = match entry.section("Desktop Entry").attr("Exec") {
-        //         Some(command) => command,
-        //         None => {
-        //             println!("No command");
-        //             return;
-        //         }
-        //     };
-        //
-        //     println!("Running {}", command);
-        //     std::process::Command::new(std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()))
-        //         .arg("-c")
-        //         .arg(command)
-        //         .spawn()
-        //         .unwrap();
-        // });
-        //
-        // list_box.append(&button);
+        count += 1;
     }
+
+    count
 }
 
 fn build_ui(app: &Application) {
@@ -96,86 +73,8 @@ fn build_ui(app: &Application) {
         .child(&list_box)
         .build();
 
-    let (searchbar, searchentry) = build_searchbar();
-    searchentry.connect_search_changed(clone!(@strong list_box => move |searchentry| {
-        let text = searchentry.text();
-
-        list_box.remove_all();
-        populate_list_box(&list_box, Some(&text));
-    }));
-
-    let key_controller = gtk::EventControllerKey::new();
-    key_controller.connect_key_pressed(move |_controller, keyval, _, _| {
-        let keyname = match keyval.name() {
-            Some(name) => {
-                let name = name.to_string();
-                name
-            }
-            None => return glib::Propagation::Proceed,
-        };
-
-        match keyname.as_str() {
-            "Escape" => {
-                exit(0);
-            }
-            "Up" => {
-                let selected_row = match list_box.selected_row() {
-                    Some(row) => row,
-                    None => {
-                        list_box.select_row(Some(
-                            &list_box
-                                .first_child()
-                                .unwrap()
-                                .downcast::<gtk::ListBoxRow>()
-                                .unwrap(),
-                        ));
-
-                        return glib::Propagation::Stop;
-                    }
-                };
-
-                list_box.select_row(Some(
-                    &selected_row
-                        .prev_sibling()
-                        .unwrap_or_else(|| list_box.last_child().unwrap())
-                        .downcast::<gtk::ListBoxRow>()
-                        .unwrap(),
-                ));
-
-                return glib::Propagation::Stop;
-            }
-            "Down" => {
-                let selected_row = match list_box.selected_row() {
-                    Some(row) => row,
-                    None => {
-                        list_box.select_row(Some(
-                            &list_box
-                                .first_child()
-                                .unwrap_or_else(|| list_box.first_child().unwrap())
-                                .downcast::<gtk::ListBoxRow>()
-                                .unwrap(),
-                        ));
-
-                        return glib::Propagation::Stop;
-                    }
-                };
-
-                list_box.select_row(Some(
-                    &selected_row
-                        .next_sibling()
-                        .unwrap()
-                        .downcast::<gtk::ListBoxRow>()
-                        .unwrap(),
-                ));
-
-                return glib::Propagation::Stop;
-            }
-            _ => {}
-        };
-
-        glib::Propagation::Stop
-    });
-    searchentry.add_controller(key_controller);
+    let (searchbar, searchentry) = build_searchbar(&list_box);
+    add_controller(searchentry, list_box);
 
     vox.append(&searchbar);
     vox.append(&scrolled_window);
