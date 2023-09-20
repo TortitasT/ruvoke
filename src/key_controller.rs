@@ -26,25 +26,44 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
                 let selected_row = match list_box.selected_row() {
                     Some(row) => row,
                     None => {
-                        list_box.select_row(Some(
-                            &list_box
-                                .first_child()
-                                .unwrap()
-                                .downcast::<gtk::ListBoxRow>()
-                                .unwrap(),
-                        ));
+                        let first_child = match list_box.first_child() {
+                            Some(child) => child,
+                            None => return glib::Propagation::Stop,
+                        };
+                        let first_child = match first_child.downcast::<gtk::ListBoxRow>() {
+                            Ok(row) => row,
+                            Err(_) => return glib::Propagation::Stop,
+                        };
+
+                        list_box.select_row(Some(&first_child));
 
                         return glib::Propagation::Stop;
                     }
                 };
 
-                list_box.select_row(Some(
-                    &selected_row
-                        .prev_sibling()
-                        .unwrap_or_else(|| list_box.last_child().unwrap())
-                        .downcast::<gtk::ListBoxRow>()
-                        .unwrap(),
-                ));
+                let prev_sibling = match selected_row.prev_sibling() {
+                    Some(row) => row,
+                    None => {
+                        let last_child = match list_box.last_child() {
+                            Some(child) => child,
+                            None => return glib::Propagation::Stop,
+                        };
+                        let last_child = match last_child.downcast::<gtk::ListBoxRow>() {
+                            Ok(row) => row,
+                            Err(_) => return glib::Propagation::Stop,
+                        };
+
+                        list_box.select_row(Some(&last_child));
+
+                        return glib::Propagation::Stop;
+                    }
+                };
+                let prev_sibling = match prev_sibling.downcast::<gtk::ListBoxRow>() {
+                    Ok(row) => row,
+                    Err(_) => return glib::Propagation::Stop,
+                };
+
+                list_box.select_row(Some(&prev_sibling));
 
                 return glib::Propagation::Stop;
             }
@@ -52,25 +71,44 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
                 let selected_row = match list_box.selected_row() {
                     Some(row) => row,
                     None => {
-                        list_box.select_row(Some(
-                            &list_box
-                                .first_child()
-                                .unwrap_or_else(|| list_box.first_child().unwrap())
-                                .downcast::<gtk::ListBoxRow>()
-                                .unwrap(),
-                        ));
+                        let first_child = match list_box.first_child() {
+                            Some(child) => child,
+                            None => return glib::Propagation::Stop,
+                        };
+                        let first_child = match first_child.downcast::<gtk::ListBoxRow>() {
+                            Ok(row) => row,
+                            Err(_) => return glib::Propagation::Stop,
+                        };
+
+                        list_box.select_row(Some(&first_child));
 
                         return glib::Propagation::Stop;
                     }
                 };
 
-                list_box.select_row(Some(
-                    &selected_row
-                        .next_sibling()
-                        .unwrap()
-                        .downcast::<gtk::ListBoxRow>()
-                        .unwrap(),
-                ));
+                let next_sibling = match selected_row.next_sibling() {
+                    Some(row) => row,
+                    None => {
+                        let first_child = match list_box.first_child() {
+                            Some(child) => child,
+                            None => return glib::Propagation::Stop,
+                        };
+                        let first_child = match first_child.downcast::<gtk::ListBoxRow>() {
+                            Ok(row) => row,
+                            Err(_) => return glib::Propagation::Stop,
+                        };
+
+                        list_box.select_row(Some(&first_child));
+
+                        return glib::Propagation::Stop;
+                    }
+                };
+                let next_sibling = match next_sibling.downcast::<gtk::ListBoxRow>() {
+                    Ok(row) => row,
+                    Err(_) => return glib::Propagation::Stop,
+                };
+
+                list_box.select_row(Some(&next_sibling));
 
                 return glib::Propagation::Stop;
             }
