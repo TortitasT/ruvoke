@@ -15,6 +15,15 @@ pub fn get_applications() -> Vec<Entry> {
         let path = path.unwrap().path();
         let path = path.to_str().unwrap();
         let entry = parse_entry(path).unwrap();
+
+        if entry.section("Desktop Entry").attr("Terminal") == Some("true") {
+            continue;
+        }
+
+        if entry.section("Desktop Entry").attr("NoDisplay") == Some("true") {
+            continue;
+        }
+
         entries.push(entry);
     }
 

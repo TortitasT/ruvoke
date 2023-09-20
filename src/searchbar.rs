@@ -57,12 +57,7 @@ pub fn build_searchbar(list_box: &gtk::ListBox) -> (gtk::SearchBar, gtk::SearchE
             }
         };
 
-        let label = selected_row
-            .child()
-            .unwrap()
-            .downcast::<gtk::Label>()
-            .unwrap();
-        let text = label.text();
+        let text = selected_row.widget_name();
 
         let entries = get_applications();
 
@@ -84,12 +79,13 @@ pub fn build_searchbar(list_box: &gtk::ListBox) -> (gtk::SearchBar, gtk::SearchE
                 }
             };
 
-            let command = command.replace("%u", "");
+            let command = command.split(' ').collect::<Vec<&str>>();
 
-            println!("Running {}", command);
+            println!("Running {}", command[0]);
             std::process::Command::new(std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()))
                 .arg("-c")
-                .arg(command)
+                .arg(command[0])
+                // .args(&command[1..])
                 .spawn()
                 .unwrap();
 

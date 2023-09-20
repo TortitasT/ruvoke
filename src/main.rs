@@ -11,13 +11,8 @@ mod searchbar;
 const APP_ID: &str = "eu.tortitas.runst";
 
 fn main() -> glib::ExitCode {
-    // Create a new application
     let app = Application::builder().application_id(APP_ID).build();
-
-    // Connect to "activate" signal of `app`
     app.connect_activate(build_ui);
-
-    // Run the application
     app.run()
 }
 
@@ -26,19 +21,56 @@ fn populate_list_box(list_box: &gtk::ListBox, text: Option<&str>) -> usize {
 
     let mut count = 0;
     for entry in entries {
-        let description = entry
+        let name = entry
             .section("Desktop Entry")
             .attr("Name")
             .unwrap_or("No name");
 
         if let Some(text) = text {
-            if !description.to_lowercase().contains(&text.to_lowercase()) {
+            if !name.to_lowercase().contains(&text.to_lowercase()) {
                 continue;
             }
         }
 
-        let label = gtk::Label::builder().label(description).build();
-        list_box.append(&label);
+        let vox = gtk::Box::builder()
+            .orientation(gtk::Orientation::Horizontal)
+            .margin_start(10)
+            .margin_end(10)
+            .margin_top(5)
+            .margin_bottom(5)
+            .spacing(20)
+            .build();
+
+        let inside_box = gtk::Box::builder()
+            .orientation(gtk::Orientation::Vertical)
+            .spacing(5)
+            .build();
+
+        let label = gtk::Label::builder()
+            .label(name)
+            .halign(gtk::Align::Start)
+            .build();
+        let description = gtk::Label::builder()
+            .label(
+                entry
+                    .section("Desktop Entry")
+                    .attr("Comment")
+                    .unwrap_or("No description"),
+            )
+            .build();
+
+        let icon =
+            gtk::Image::from_icon_name(entry.section("Desktop Entry").attr("Icon").unwrap_or(""));
+        icon.set_pixel_size(32);
+
+        vox.append(&icon);
+        inside_box.append(&label);
+        inside_box.append(&description);
+        vox.append(&inside_box);
+
+        let row = gtk::ListBoxRow::builder().child(&vox).name(name).build();
+
+        list_box.append(&row);
 
         count += 1;
     }
