@@ -1,6 +1,6 @@
 use crate::core::get_applications;
 use gtk::prelude::*;
-use gtk::{glib, Application, ApplicationWindow};
+use gtk::{gdk, glib, Application, ApplicationWindow};
 use key_controller::add_controller;
 use searchbar::build_searchbar;
 
@@ -12,9 +12,27 @@ const APP_ID: &str = "eu.tortitas.runst";
 
 fn main() -> glib::ExitCode {
     let app = Application::builder().application_id(APP_ID).build();
+
+    app.connect_startup(|_| {
+        // load_css();
+
+        let settings = gtk::Settings::default().unwrap();
+        settings.set_gtk_application_prefer_dark_theme(true);
+    });
     app.connect_activate(build_ui);
     app.run()
 }
+
+// fn load_css() {
+//     let provider = gtk::CssProvider::new();
+//     provider.load_from_data(include_str!("../assets/default.css"));
+//
+//     gtk::style_context_add_provider_for_display(
+//         &gdk::Display::default().expect("Could not connect to a display."),
+//         &provider,
+//         gtk::STYLE_PROVIDER_PRIORITY_APPLICATION,
+//     );
+// }
 
 fn populate_list_box(list_box: &gtk::ListBox, text: Option<&str>) -> usize {
     let entries = get_applications();
