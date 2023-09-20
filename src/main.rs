@@ -1,6 +1,7 @@
 use std::process::exit;
 
 use freedesktop_entry_parser::{parse_entry, Entry};
+use gtk::glib::clone;
 use gtk::prelude::*;
 use gtk::{glib, Application, ApplicationWindow};
 
@@ -45,25 +46,28 @@ fn populate_list_box(list_box: &gtk::ListBox, text: Option<&str>) {
             }
         }
 
-        let button = gtk::Button::builder().label(description).build();
-        button.connect_clicked(move |_| {
-            let command = match entry.section("Desktop Entry").attr("Exec") {
-                Some(command) => command,
-                None => {
-                    println!("No command");
-                    return;
-                }
-            };
+        let label = gtk::Label::builder().label(description).build();
+        list_box.append(&label);
 
-            println!("Running {}", command);
-            std::process::Command::new(std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()))
-                .arg("-c")
-                .arg(command)
-                .spawn()
-                .unwrap();
-        });
-
-        list_box.append(&button);
+        // let button = gtk::Button::builder().label(description).build();
+        // button.connect_clicked(move |_| {
+        //     let command = match entry.section("Desktop Entry").attr("Exec") {
+        //         Some(command) => command,
+        //         None => {
+        //             println!("No command");
+        //             return;
+        //         }
+        //     };
+        //
+        //     println!("Running {}", command);
+        //     std::process::Command::new(std::env::var("SHELL").unwrap_or_else(|_| "sh".to_string()))
+        //         .arg("-c")
+        //         .arg(command)
+        //         .spawn()
+        //         .unwrap();
+        // });
+        //
+        // list_box.append(&button);
     }
 }
 
@@ -72,13 +76,17 @@ fn build_ui(app: &Application) {
     let window = window.default_width(800).default_height(500);
     let window = window.opacity(0.8);
     let window = window.resizable(false);
+    let window = window.decorated(false);
 
     let vox = gtk::Box::builder()
         .orientation(gtk::Orientation::Vertical)
         .spacing(10)
         .build();
 
-    let list_box = gtk::ListBox::builder().build();
+    let list_box = gtk::ListBox::builder()
+        .selection_mode(gtk::SelectionMode::Browse)
+        .show_separators(true)
+        .build();
     populate_list_box(&list_box, None);
 
     let scrolled_window = gtk::ScrolledWindow::builder()
@@ -89,17 +97,15 @@ fn build_ui(app: &Application) {
         .build();
 
     let (searchbar, searchentry) = build_searchbar();
-    searchentry.connect_changed(move |entry| {
-        let text = entry.text();
+    searchentry.connect_search_changed(clone!(@strong list_box => move |searchentry| {
+        let text = searchentry.text();
 
         list_box.remove_all();
         populate_list_box(&list_box, Some(&text));
-    });
+    }));
 
     let key_controller = gtk::EventControllerKey::new();
     key_controller.connect_key_pressed(move |_controller, keyval, _, _| {
-        // println!("Key pressed: {}", keyval);
-
         let keyname = match keyval.name() {
             Some(name) => {
                 let name = name.to_string();
@@ -113,10 +119,56 @@ fn build_ui(app: &Application) {
                 exit(0);
             }
             "Up" => {
-                print!("Go up!!")
+                let selected_row = match list_box.selected_row() {
+                    Some(row) => row,
+                    None => {
+                        list_box.select_row(Some(
+                            &list_box
+                                .first_child()
+                                .unwrap()
+                                .downcast::<gtk::ListBoxRow>()
+                                .unwrap(),
+                        ));
+
+                        return glib::Propagation::Stop;
+                    }
+                };
+
+                list_box.select_row(Some(
+                    &selected_row
+                        .prev_sibling()
+                        .unwrap_or_else(|| list_box.last_child().unwrap())
+                        .downcast::<gtk::ListBoxRow>()
+                        .unwrap(),
+                ));
+
+                return glib::Propagation::Stop;
             }
             "Down" => {
-                print!("Go down!!")
+                let selected_row = match list_box.selected_row() {
+                    Some(row) => row,
+                    None => {
+                        list_box.select_row(Some(
+                            &list_box
+                                .first_child()
+                                .unwrap_or_else(|| list_box.first_child().unwrap())
+                                .downcast::<gtk::ListBoxRow>()
+                                .unwrap(),
+                        ));
+
+                        return glib::Propagation::Stop;
+                    }
+                };
+
+                list_box.select_row(Some(
+                    &selected_row
+                        .next_sibling()
+                        .unwrap()
+                        .downcast::<gtk::ListBoxRow>()
+                        .unwrap(),
+                ));
+
+                return glib::Propagation::Stop;
             }
             _ => {}
         };
@@ -138,7 +190,14 @@ fn build_ui(app: &Application) {
 fn get_applications() -> Vec<Entry> {
     let mut entries = Vec::new();
 
-    let paths = std::fs::read_dir("/usr/share/applications").unwrap();
+    let paths = match std::fs::read_dir("/usr/share/applications") {
+        Ok(paths) => paths,
+        Err(_) => {
+            println!("Error reading /usr/share/applications");
+            return entries;
+        }
+    };
+
     for path in paths {
         let path = path.unwrap().path();
         let path = path.to_str().unwrap();
