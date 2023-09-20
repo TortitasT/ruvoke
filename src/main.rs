@@ -72,13 +72,13 @@ fn build_ui(app: &Application) {
         .build();
 
     let (searchbar, searchentry) = build_searchbar(&list_box);
-    add_controller(searchentry, list_box);
 
     vox.append(&searchbar);
     vox.append(&scrolled_window);
 
-    let window = window.child(&vox);
+    add_controller(searchentry, list_box, scrolled_window);
 
+    let window = window.child(&vox);
     let window = window.build();
 
     window.present();

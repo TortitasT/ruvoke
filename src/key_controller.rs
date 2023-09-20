@@ -7,7 +7,11 @@ use gtk::SearchEntry;
 /// This module contains the key controller responsible for moving the cursor Up, Down and exiting
 /// on Escape.
 
-pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
+pub fn add_controller(
+    searchentry: SearchEntry,
+    list_box: gtk::ListBox,
+    scrolled_window: gtk::ScrolledWindow,
+) {
     let key_controller = gtk::EventControllerKey::new();
     key_controller.connect_key_pressed(move |_, keyval, _, _| {
         let keyname = match keyval.name() {
@@ -37,6 +41,10 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
 
                         list_box.select_row(Some(&first_child));
 
+                        scrolled_window
+                            .vadjustment()
+                            .set_value(first_child.allocation().y() as f64);
+
                         return glib::Propagation::Stop;
                     }
                 };
@@ -55,6 +63,10 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
 
                         list_box.select_row(Some(&last_child));
 
+                        scrolled_window
+                            .vadjustment()
+                            .set_value(last_child.allocation().y() as f64);
+
                         return glib::Propagation::Stop;
                     }
                 };
@@ -64,6 +76,12 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
                 };
 
                 list_box.select_row(Some(&prev_sibling));
+
+                if prev_sibling.allocation().y() < scrolled_window.vadjustment().value() as i32 {
+                    scrolled_window
+                        .vadjustment()
+                        .set_value(prev_sibling.allocation().y() as f64);
+                }
 
                 return glib::Propagation::Stop;
             }
@@ -81,6 +99,10 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
                         };
 
                         list_box.select_row(Some(&first_child));
+
+                        scrolled_window
+                            .vadjustment()
+                            .set_value(first_child.allocation().y() as f64);
 
                         return glib::Propagation::Stop;
                     }
@@ -100,6 +122,10 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
 
                         list_box.select_row(Some(&first_child));
 
+                        scrolled_window
+                            .vadjustment()
+                            .set_value(first_child.allocation().y() as f64);
+
                         return glib::Propagation::Stop;
                     }
                 };
@@ -109,6 +135,15 @@ pub fn add_controller(searchentry: SearchEntry, list_box: gtk::ListBox) {
                 };
 
                 list_box.select_row(Some(&next_sibling));
+
+                if next_sibling.allocation().y() + next_sibling.allocation().height()
+                    > scrolled_window.vadjustment().value() as i32
+                        + scrolled_window.allocation().height()
+                {
+                    scrolled_window
+                        .vadjustment()
+                        .set_value(next_sibling.allocation().y() as f64);
+                }
 
                 return glib::Propagation::Stop;
             }
