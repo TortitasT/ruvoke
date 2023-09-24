@@ -11,3 +11,4 @@ description = "Application runner made in Rust"
 [dependencies]
 freedesktop_entry_parser = "1.3.0"
 gtk = { version = "0.7.2", package = "gtk4", features = ["v4_12"] }
+regex = "1.9.5"

@@ -2,6 +2,7 @@ use std::process::exit;
 
 use gtk::glib::clone;
 use gtk::prelude::*;
+use regex::Regex;
 
 use crate::{get_applications, populate_list_box};
 
@@ -20,11 +21,19 @@ pub fn build_searchbar(list_box: &gtk::ListBox) -> (gtk::SearchBar, gtk::SearchE
         let text = searchentry.text();
 
         list_box.remove_all();
-        let count = populate_list_box(&list_box, Some(&text));
 
-        if count == 0 {
+        let math_regex = Regex::new(r"\d[+]\d").unwrap();
+        if math_regex.is_match(&text) {
+            let operators = Regex::new(r"[+]").unwrap();
+            let numbers = operators.split(&text).collect::<Vec<&str>>();
+            let numbers = numbers
+                .iter()
+                .map(|number| number.parse::<i32>().unwrap())
+                .collect::<Vec<i32>>();
+
+
             let label = gtk::Label::builder()
-                .label("No results")
+                .label(&numbers.iter().sum::<i32>().to_string())
                 .halign(gtk::Align::Center)
                 .build();
             list_box.append(&label);
@@ -32,13 +41,7 @@ pub fn build_searchbar(list_box: &gtk::ListBox) -> (gtk::SearchBar, gtk::SearchE
             return;
         }
 
-        list_box.select_row(Some(
-            &list_box
-                .first_child()
-                .unwrap()
-                .downcast::<gtk::ListBoxRow>()
-                .unwrap(),
-        ));
+        search_applications(&list_box, &text);
     }));
 
     searchentry.connect_activate(clone!(@strong list_box => move |_| {
@@ -94,4 +97,26 @@ pub fn build_searchbar(list_box: &gtk::ListBox) -> (gtk::SearchBar, gtk::SearchE
     }));
 
     (searchbar, searchentry)
+}
+
+fn search_applications(list_box: &gtk::ListBox, text: &str) {
+    let count = populate_list_box(&list_box, Some(&text));
+
+    if count == 0 {
+        let label = gtk::Label::builder()
+            .label("No results")
+            .halign(gtk::Align::Center)
+            .build();
+        list_box.append(&label);
+
+        return;
+    }
+
+    list_box.select_row(Some(
+        &list_box
+            .first_child()
+            .unwrap()
+            .downcast::<gtk::ListBoxRow>()
+            .unwrap(),
+    ));
 }
